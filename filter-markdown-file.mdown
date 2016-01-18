@@ -1,0 +1,38 @@
+title: LilyPond-snippet in markdown file
+css: github
+
+# [%title]
+
+## RegExps
+
+- Get the LilyPond snippet:  
+    ```
+    (?:(<!--lilypond-markdown-->$)\n(```$)*)([\s\S]*?)(\2*\n\1)/mi
+    ```
+
+- [Extract data from the snippet](https://regex101.com/r/yG2eW8/1). Config-lines (must be kept together, no whitespace between lines) as `1st group`, assume the rest is music as `2nd group`:  
+    ```
+    (?:[\w]*\:[\s]*[\w\W]*?$\n)*([^\1]*)/m
+    ```
+
+## LilyPond snippet
+
+````
+<!--lilypond-markdown-->
+```
+
+key: b-minor
+time: 4/4
+baseline: b1
+
+d4 b cs d | e e e2 | \break
+e4 d cs b | a a a2 \bar "|."
+
+```
+<!--lilypond-markdown-->
+````
+
+### Explanation
+
+- The code has to be enclosed in `<!--lilypond-markdown-->` tags
+- The three backticks ` ``` ` are only used to format the snippet as code if no pre-processor is available. It can be safely be eliminated.
