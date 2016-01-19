@@ -3,11 +3,16 @@
 
 def process_markdown(markdown)
 	# Regex to find lilypond snippets
-	re_get_snippet = /(?:<!--\s*(lilypond-snippet)\s*-->$\n(```$)*)([\s\S]*?)(\2*\n<!--\s*\1\s*-->)/mi
+	re_get_snippet = /((^`{3,})\n[\s\S]*?\n(\2))|(?:<!--\s*(lilypond-snippet)\s*-->$\n(```$)*)([\s\S]*?)(\5*\n<!--\s*\4\s*-->)/mi
 
 	# Run through all snippets, and process
 	processed_markdown = markdown.gsub(re_get_snippet).with_index do | m, index |
-		process_snippet( $3, index )
+		# If group 2 is present, then it's code - return without processing
+		if $2
+			$1
+		else
+			process_snippet($6, index)
+		end
 	end
 
 	return processed_markdown
