@@ -5,31 +5,32 @@ css: github
 
 ## RegExps
 
-- Get the LilyPond snippet:  
+- [Get the LilyPond snippet](https://regex101.com/r/yG2eW8/6):  
     ```
-    (?:(<!--lilypond-markdown-->$)\n(```$)*)([\s\S]*?)(\2*\n\1)/mi
+    /((^`{3,})\w*\n[\s\S]*?\n(\2))|(?:<!--\s*(lilypond-snippet)\s*-->$\n(?:(```)\w*$)*)([\s\S]*?)(\5*\n<!--\s*\4\s*-->)/mi
     ```
 
-- [Extract data from the snippet](https://regex101.com/r/yG2eW8/1). Config-lines (must be kept together, no whitespace between lines) as `1st group`, assume the rest is music as `2nd group`:  
+- [Extract data from the snippet](https://regex101.com/r/yG2eW8/5). Config-lines (must be kept together, no whitespace between lines) as `1st group`, assume the rest is music as `2nd group`:  
     ```
-    (?:[\w]*\:[\s]*[\w\W]*?$\n)*([^\1]*)/m
+    /((?:\w*\:\s*[\w\W]*?\n)+)([^\1]+)/mi
     ```
 
 ## LilyPond snippet
 
 ````
-<!--lilypond-markdown-->
+<!-- lilypond-snippet -->
 ```
 
 key: b-minor
 time: 4/4
 baseline: b1
+template: one-line
 
 d4 b cs d | e e e2 | \break
 e4 d cs b | a a a2 \bar "|."
 
 ```
-<!--lilypond-markdown-->
+<!--lilypond-snippet -->
 ````
 
 ### Explanation
