@@ -2,10 +2,10 @@
 #<Encoding:UTF-8>
 
 def process_markdown(markdown)
-	# Regex to find lilypond snippets
-	re_get_snippet = /((^`{3,})\n[\s\S]*?\n(\2))|(?:<!--\s*(lilypond-snippet)\s*-->$\n(```$)*)([\s\S]*?)(\5*\n<!--\s*\4\s*-->)/mi
+	# Regex to find lilypond snippets. First part determines if it is a code-block or else checks if it's a LilyPond-snippet.
+	re_get_snippet = /((^`{3,})\w*\n[\s\S]*?\n(\2))|(?:<!--\s*(lilypond-snippet)\s*-->$\n(?:(```)\w*$)*)([\s\S]*?)(\5*\n<!--\s*\4\s*-->)/mi
 
-	# Run through all snippets, and process
+	# Find all snippets in markdown and process them.
 	processed_markdown = markdown.gsub(re_get_snippet).with_index do | m, index |
 		# If group 2 is present, then it's code - return without processing
 		if $2
@@ -20,14 +20,14 @@ end
 
 def process_snippet(snippet, index)
 	
-	# Regex to get snippet data, group 1 = config, group 2 = music
+	# Regex to get snippet data, group 1 = config, group 2 = music.
 	re_get_data_from_snippet = /((?:\w*\:\s*[\w\W]*?\n)+)([^\1]+)/mi
 	data = re_get_data_from_snippet.match(snippet)
 	
-	# Process config
+	# Process config.
 	config = process_config(data[1])
 
-	# Process music
+	# Process music.
 	music = process_music(data[2])
 
 	snippet = "### Snippet no ##{index+1}  \n\n"
@@ -43,17 +43,18 @@ def process_snippet(snippet, index)
 	if config .length != 0
 		config = "#### Config:  \n```\n#{config}\n```  \n"
 	end
-	return "#{snippet}#{songprops}#{template}#{not_processed}#### Music:  \n```\n#{music}\n```"
-	# return "#{snippet}#{config}#### Music:  \n```\n#{music}\n```"
+	# return "#{snippet}#{songprops}#{template}#{not_processed}#### Music:  \n```\n#{music}\n```"
+	return_data = "#{snippet}#{config}#### Music:  \n```\n#{music}\n```"
+	return "<div style=\"background-color: red;\">#{return_data}</div>"
 end
 
 def process_config( config )
-	# Prepare hashes for different config parts
+	# Prepare hashes for different config parts.
 	template = {}
 	songprops = {}
 	not_processed = {}
 
-	# Read all config and reformat to LilyPond syntax
+	# Read all config and reformat to LilyPond syntax.
 	config.each_line do |line|
 		match = /(\w*)\:\s*([\w\W]*[^\s])/.match(line)
 		key = match[1]
@@ -75,7 +76,7 @@ def process_config( config )
 		
 	end
 
-	# Return hash of all processed config values
+	# Return hash of all processed config values.
 	config_hash = {
 		"songprops"=>songprops,
 		"template"=>template,
@@ -86,7 +87,7 @@ def process_config( config )
 end
 
 def process_music( music )
-	# Make LilyPond variable of music data
+	# Make LilyPond variable of music data.
 	music = "music = {#{music}}"
 	return music
 end
