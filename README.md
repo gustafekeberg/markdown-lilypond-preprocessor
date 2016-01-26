@@ -1,6 +1,10 @@
-# Markdown preprocessor for LilyPond snippets in markdown file
+# LilyPond snippets in markdown/multimarkdown
+
+*Markdown/MultiMarkdown preprocessor for LilyPond snippets in markdown file.*
 
 The goal for this preprocessor is to make it easy to include music via a LilyPond snippet in a markdown file.
+
+This is just ideas. At the moment it can extract the LilyPond data from the markdown syntax but nothing more.
 
 ## RegExps
 
