@@ -1,7 +1,6 @@
-title: LilyPond-snippet in markdown file
-css: github
+# Markdown preprocessor for LilyPond snippets in markdown file
 
-# [%title]
+The goal for this preprocessor is to make it easy to include music via a LilyPond snippet in a markdown file.
 
 ## RegExps
 
@@ -23,8 +22,7 @@ css: github
 
 key: b-minor
 time: 4/4
-baseline: b1
-template: one-line
+template: default
 
 d4 b cs d | e e e2 | \break
 e4 d cs b | a a a2 \bar "|."
@@ -36,4 +34,4 @@ e4 d cs b | a a a2 \bar "|."
 ### Explanation
 
 - The code has to be enclosed in `<!--lilypond-markdown-->` tags
-- The three backticks ` ``` ` are only used to format the snippet as code if no pre-processor is available. It can be safely be eliminated.
+- The three backticks ` ``` ` are only used to format the snippet as code if no pre-processor is available. It can be eliminated without any problems.
