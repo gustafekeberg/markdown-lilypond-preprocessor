@@ -1,2 +1,7 @@
 *.sublime*
 testfile*
+*ly
+*ps
+*eps
+*svg
+*png
