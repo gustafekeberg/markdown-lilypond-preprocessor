@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby -E utf-8
 #<Encoding:UTF-8>
 
+Dir.chdir(ENV['MARKED_ORIGIN'])
 def process_markdown(markdown)
 	# Regex to find lilypond snippets. First part determines if it is a code-block or else checks if it's a LilyPond-snippet.
 	re_get_snippet = /((^`{3,})\w*\n[\s\S]*?\n(\2))|(?:<!--\s*(lilypond-snippet)\s*-->$\n(?:(```)\w*$)*)([\s\S]*?)(\5*\n<!--\s*\4\s*-->)/mi
@@ -18,39 +19,76 @@ def process_markdown(markdown)
 	return processed_markdown
 end
 
+def make_lilypond_file( data, i )
+	filename = "lilypond-snippet-#{i}.ly"
+	config = data["config"]
+	music = data["music"]
+	songprops = config["songprops"]
+	template = config["template"]
+	last_run_prefix = "-"
+
+	lilypond_bin = "/Applications/LilyPond.app/Contents/Resources/bin/lilypond"
+	
+	unless config["template"]
+		template = "default-template"
+	end
+	
+	template = File.basename(template, ".*") + ".ly"
+	template_content = IO.read(template)
+
+	songprops_string = ""
+	songprops.each do |key, value|
+		songprops_string += value
+	end
+	songprops_string = "songprops = {\n#{songprops_string}}"
+
+	template_processed = template_content.gsub('#{music}', music)
+	template_processed = template_processed.gsub('#{songprops}', songprops_string)
+	IO.write(filename, template_processed)
+
+	last_run_filename = last_run_prefix + filename
+
+	file_content = IO.read(filename)
+	last_run_file_content = ""
+	
+	if File.file?(last_run_filename)
+		last_run_file_content = IO.read(last_run_filename)
+	end
+
+	# Check if lilypond-snippet files has changed since last run, then run LilyPond
+	identical = true
+	unless file_content == last_run_file_content
+		`cp #{filename} #{last_run_filename}`
+		`#{lilypond_bin} -dbackend=eps -dresolution=600 --png #{filename}`
+		basename = File.basename(filename, ".ly")
+		`rm #{basename}*.eps #{basename}*.count #{basename}*.tex #{basename}*.texi`
+		identical = false
+	end
+	generated_file = File.basename(filename, ".ly") + ".png"
+	return generated_file
+end
+
 def process_snippet(snippet, index)
 	
 	# Regex to get snippet data, group 1 = config, group 2 = music.
 	re_get_data_from_snippet = /((?:\w*\:\s*[\w\W]*?\n)+)([^\1]+)/mi
 	data = re_get_data_from_snippet.match(snippet)
 	
-	# Process config.
+	# Process config and music.
 	config = process_config(data[1])
-
-	# Process music.
 	music = process_music(data[2])
 
-	snippet = "### Snippet no ##{index+1}  \n\n"
-	if config['songprops'].length != 0
-		songprops = "#### Songprops:  \n```\n#{config['songprops']}\n```  \n"
-	end
-	if config['template'].length != 0
-		template = "#### Template:  \n```\n#{config['template']}\n```  \n"
-	end
-	if config['not_processed'].length != 0
-		not_processed = "#### Not processed config:  \n```\n#{config['not_processed']}\n```  \n"
-	end
-	if config .length != 0
-		config = "#### Config:  \n```\n#{config}\n```  \n"
-	end
-	# return "#{snippet}#{songprops}#{template}#{not_processed}#### Music:  \n```\n#{music}\n```"
-	return_data = "#{snippet}#{config}#### Music:  \n```\n#{music}\n```"
-	return "<div style=\"background-color: red;\">#{return_data}</div>"
+	# Make lilypond file
+	file_src = make_lilypond_file( {
+		"config" => config,
+		"music" => music
+		}, index )
+	return "<img src=#{file_src} />"
 end
 
 def process_config( config )
 	# Prepare hashes for different config parts.
-	template = {}
+	config_hash = {}
 	songprops = {}
 	not_processed = {}
 
@@ -69,7 +107,7 @@ def process_config( config )
 		when "language"
 			songprops[key] = "\\#{key} \"#{value}\"\n"
 		when "template", "baseline"
-			template[key] = value
+			config_hash[key] = value
 		else
 			not_processed[key] = value
 		end
@@ -77,11 +115,9 @@ def process_config( config )
 	end
 
 	# Return hash of all processed config values.
-	config_hash = {
-		"songprops"=>songprops,
-		"template"=>template,
-		"not_processed"=>not_processed
-	}
+	config_hash["songprops"] = songprops
+	config_hash["not_processed"] = not_processed
+
 	# songprops_string = "#{songprops['language']}#{songprops['key']}#{songprops['time']}"
 	return config_hash
 end
