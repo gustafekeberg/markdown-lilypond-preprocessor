@@ -2,7 +2,7 @@
 
 - [ ] Function to get template (can be stored in different places)
 - [ ] Default template
-- [ ] Where to store lilypond-files and output (subfolder)
+- [ ] Where to store lilypond-files and output (subfolder)?
 - [ ] Get config from multimarkdown-config in file header
 - [ ] Two modes: `<!-- lilypond-simple -->` / `<!-- lilypond-full -->`. Process music differently depending on if entered as direct input or as variable:
 
@@ -30,3 +30,4 @@ If written as variable, multiple variables is possible. Template could be format
     \var_3
     }
 ```
+
