@@ -1,15 +1,20 @@
 #!/usr/bin/env ruby -E utf-8
 #<Encoding:UTF-8>
 
+# This script should be run from Marked 2 to work
+
 # Change dir to MARKED_ORIGIN path env var set by Marked and assign variables for all env vars.
 Dir.chdir(ENV['MARKED_ORIGIN'])
 
-markdown_file_dir   = ENV['MARKED_ORIGIN']
-markdown_ext        = ENV['MARKED_EXT']
-markdown_filename   = File.basename(ENV['MARKED_PATH'], ".#{markdown_ext}")
-lilypond_files_path = "#{markdown_file_dir}#{markdown_filename}-lilypond-data"
-script_dir          = "#{ENV['HOME']}/.markdown-lilypond-preprocessor"
-config_file         = "#{script_dir}/config"
+# Global variables
+
+$mlpp_marked_origin       = ENV['MARKED_ORIGIN']
+$mlpp_marked_ext          = ENV['MARKED_EXT']
+$mlpp_marked_filename     = File.basename(ENV['MARKED_PATH'], ".#{$mlpp_marked_ext}")
+$mlpp_lilypond_output_path = "#{$mlpp_marked_origin}#{$mlpp_marked_filename}-lilypond-data"
+$mlpp_script_dir          = "#{ENV['HOME']}/.markdown-lilypond-preprocessor"
+$mlpp_config_file         = "#{$mlpp_script_dir}/config"
+$mlpp_template_dir        = "#{$mlpp_script_dir}/templates"
 
 def read_config_file( file )
 	# Read config file, create it with default values if it doesn't exist
@@ -51,7 +56,7 @@ end
 
 def make_lilypond_file( data, i )
 	# Construct the lilypond file
-	filename = "lilypond-snippet-#{i}.ly"
+	lilypond_filename = "lilypond-snippet-#{i}.ly"
 	config = data["config"]
 	music = data["music"]
 	songprops = config["songprops"]
@@ -60,10 +65,11 @@ def make_lilypond_file( data, i )
 
 	lilypond_bin = "/Applications/LilyPond.app/Contents/Resources/bin/lilypond"
 	
+	# Replace with get template function!
+	# Update function: "filename"+".ly"
 	unless config["template"]
 		template = "default-template"
 	end
-	
 	template = File.basename(template, ".*") + ".ly"
 	template_content = IO.read(template)
 
@@ -75,11 +81,11 @@ def make_lilypond_file( data, i )
 
 	template_processed = template_content.gsub('#{music}', music)
 	template_processed = template_processed.gsub('#{songprops}', songprops_string)
-	IO.write(filename, template_processed)
+	IO.write(lilypond_filename, template_processed)
 
-	last_run_filename = last_run_prefix + filename
+	last_run_filename = last_run_prefix + lilypond_filename
 
-	file_content = IO.read(filename)
+	file_content = IO.read(lilypond_filename)
 	last_run_file_content = ""
 	
 	if File.file?(last_run_filename)
@@ -89,14 +95,14 @@ def make_lilypond_file( data, i )
 	# Check if lilypond-snippet files has changed since last run, then run LilyPond
 	identical = true
 	unless file_content == last_run_file_content
-		`cp #{filename} #{last_run_filename}`
-		`#{lilypond_bin} -dbackend=eps -dresolution=600 --png #{filename}`
-		basename = File.basename(filename, ".ly")
+		`cp #{lilypond_filename} #{last_run_filename}`
+		`#{lilypond_bin} -dbackend=eps -dresolution=600 --png #{lilypond_filename}`
+		basename = File.basename(lilypond_filename, ".ly")
 		`rm #{basename}*.eps #{basename}*.count #{basename}*.tex #{basename}*.texi`
 		identical = false
 	end
 	random = rand(1000)
-	generated_file = File.basename(filename, ".ly") + ".png?#{random}"
+	generated_file = File.basename(lilypond_filename, ".ly") + ".png?#{random}"
 	return generated_file
 end
 
@@ -171,14 +177,36 @@ def process_music( music )
 	return music
 end
 
-def get_lilypond_template( template )
+def get_lilypond_template( template_filename )
 	# Search for templates:
 	# 
-	# 1. look in MARKED_ORIGIN dir
-	# 2. look in $HOME/."processor_name"
-	# 3. use built in template
+	# 1. If env var MARKED_ORIGIN is set, start searching for templates here
+	# 2. Look in $HOME/."processor_name"/templates
+	# 3. (Use the built in template, located?)
 	# 
-	# return template, return template-type?
+	# return template
+
+	# Add different locations to look for template
+	marked_origin_template = "#{$mlpp_marked_origin}#{template_filename}"
+	template_dir_template = "#{$mlpp_template_dir}/#{template_filename}"
+
+	template = "___Template `#{template}` was not found.___"
+
+	# Search for file as entered
+	if File.file?( File.expand_path( template_filename ))
+		template = IO.read( template_filename )
+	# Search for file in marked_origin dir
+	
+	elsif File.file?( marked_origin_template )
+		template = IO.read( marked_origin_template )
+
+	# Search in template dir in user-root
+	
+	elsif File.file?( template_dir_template )
+		template = IO.read( template_dir_template )
+
+	end
+	return template
 end
 
 input = $stdin.read
