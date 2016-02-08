@@ -54,11 +54,11 @@ def process_markdown(markdown)
 	return processed_markdown
 end
 
-def make_lilypond_file( data, i )
+def make_lilypond_file( lilypond_obj, i )
 	# Construct the lilypond file
 	lilypond_filename = "lilypond-snippet-#{i}.ly"
-	config = data["config"]
-	music = data["music"]
+	config = lilypond_obj["config"]
+	music = lilypond_obj["music"]
 	songprops = config["songprops"]
 	template = config["template"]
 	last_run_prefix = "-"
