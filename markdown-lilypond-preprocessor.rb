@@ -136,7 +136,7 @@ def lilypond_simple_output( lilypond_obj, index )
 		`rm #{lilypond_basename}*.eps #{lilypond_basename}*.count #{lilypond_basename}*.tex #{lilypond_basename}*.texi`
 		identical = false
 	end
-	random = rand(1000)
+	random = rand(10000)
 	generated_file = File.join($mlpp_lilypond_output_relative_path, "#{lilypond_basename}.png?#{random}")
 	return generated_file
 end
