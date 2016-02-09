@@ -1,6 +1,8 @@
 #!/usr/bin/env ruby -E utf-8
 #<Encoding:UTF-8>
 
+require 'fileutils'
+
 # This script should be run from Marked 2 to work
 
 # Change dir to MARKED_ORIGIN path env var set by Marked and assign variables for all env vars.
@@ -8,20 +10,23 @@ Dir.chdir(ENV['MARKED_ORIGIN'])
 
 # Global variables
 
-$mlpp_marked_origin        = ENV['MARKED_ORIGIN']
-$mlpp_marked_ext           = ENV['MARKED_EXT']
-$mlpp_marked_filename      = File.basename(ENV['MARKED_PATH'], ".#{$mlpp_marked_ext}")
-$mlpp_lilypond_output_path = File.join($mlpp_marked_origin, "#{$mlpp_marked_filename}-lilypond-data")
-$mlpp_script_dir           = File.dirname(__FILE__)
-$mlpp_home_dir             = File.join(ENV['HOME'], ".markdown-lilypond-preprocessor")
-$mlpp_config_file          = File.join($mlpp_home_dir, "config")
-$mlpp_template_dir         = File.join($mlpp_home_dir, "templates")
-$mlpp_default_template     = File.join($mlpp_script_dir, "lib/default-template.ly")
-$mlpp_lilypond_bin         = "/Applications/LilyPond.app/Contents/Resources/bin/lilypond"
+$mlpp_marked_origin                 = ENV['MARKED_ORIGIN']
+$mlpp_marked_path                   = ENV['MARKED_PATH']
+$mlpp_marked_ext                    = ENV['MARKED_EXT']
+$mlpp_marked_filename               = File.basename($mlpp_marked_path, ".#{$mlpp_marked_ext}")
+$mlpp_lilypond_output_relative_path = "./#{$mlpp_marked_filename}-lilypond-data"
+$mlpp_lilypond_output_full_path     = File.join($mlpp_marked_origin, $mlpp_lilypond_output_relative_path)
+$mlpp_script_dir                    = File.dirname(__FILE__)
+$mlpp_home_dir                      = File.join(ENV['HOME'], ".markdown-lilypond-preprocessor")
+$mlpp_config_file                   = File.join($mlpp_home_dir, "config")
+$mlpp_template_dir                  = File.join($mlpp_home_dir, "templates")
+$mlpp_default_template              = File.join($mlpp_script_dir, "lib/default-template.ly")
+$mlpp_lilypond_bin                  = "/Applications/LilyPond.app/Contents/Resources/bin/lilypond"
 
 def log( data )
 	timestamp = Time.now.getutc
-	output = "  \n`#{timestamp}`: #{data}"
+	file = $mlpp_marked_path
+	output = "  \n`#{timestamp}` (`#{file}`): #{data}"
 	log_path = File.join($mlpp_script_dir, "log.txt")
 	File.open(log_path, 'a') { |f| f.write(output) }
 end
@@ -30,7 +35,7 @@ def read_config_file( file )
 	# Read config file, create it with default values if it doesn't exist
 	
 	if File.file?( file )
-		configs = IO.read(file)
+		configs = IO.read( file )
 	else
 		configs = "lilypond_bin: \"/Applications/LilyPond.app/Contents/Resources/bin/lilypond\"\ndefault_template: \"default-template\""
 		dirname = File.dirname( file )
@@ -48,7 +53,6 @@ def find_and_process_snippets(markdown)
 	
 	# Find all simple snippets in markdown and process them.
 	processed_markdown = markdown.gsub(re_get_snippet).with_index do | m, index |
-
 		if $2 # If group 2 is present, then it should display as code - proceed without processing
 			$1
 		else # Else check what type of snippet (simple|full|...)
@@ -85,14 +89,21 @@ end
 
 def lilypond_simple_output( lilypond_obj, index )
 	# Construct the lilypond file
-	lilypond_filename = "lilypond-snippet-#{index}.ly"
+	lilypond_dir = File.expand_path($mlpp_lilypond_output_full_path)
+	FileUtils.mkdir_p( lilypond_dir )
+	Dir.chdir(lilypond_dir)
+	simple_snippet_filename = "simple-snippet-#{index}.ly"
+	last_run_prefix = "_"
+	lilypond_filename = File.join(lilypond_dir, simple_snippet_filename)
+	lilypond_last_run_filename = File.join(lilypond_dir, "#{last_run_prefix}#{simple_snippet_filename}")
+	lilypond_basename = File.basename(lilypond_filename, ".ly")
+
 	config = lilypond_obj["config"]
 	music = lilypond_obj["music"]
 	songprops = config["songprops"]
 	config_hash = config["config_hash"]
 	template = config_hash["template"]
 	template_content = get_lilypond_template( template, index )
-	last_run_prefix = "_"
 
 	songprops_string = ""
 	songprops.each do |key, value|
@@ -102,28 +113,31 @@ def lilypond_simple_output( lilypond_obj, index )
 
 	template_processed = template_content.gsub('#{music}', music)
 	template_processed = template_processed.gsub('#{songprops}', songprops_string)
+	
 	IO.write(lilypond_filename, template_processed)
 
-	last_run_filename = last_run_prefix + lilypond_filename
-
-	file_content = IO.read(lilypond_filename)
+	file_content = File.read( lilypond_filename )
 	last_run_file_content = ""
 	
-	if File.file?(last_run_filename)
-		last_run_file_content = IO.read(last_run_filename)
+	if File.file?(lilypond_last_run_filename)
+		last_run_file_content = File.read( lilypond_last_run_filename )
 	end
 
 	# Check if lilypond-snippet files has changed since last run, then run LilyPond
 	identical = true
 	unless file_content == last_run_file_content
-		`cp #{lilypond_filename} #{last_run_filename}`
-		`#{$mlpp_lilypond_bin} -dbackend=eps -dresolution=600 --png #{lilypond_filename}`
-		basename = File.basename(lilypond_filename, ".ly")
-		`rm #{basename}*.eps #{basename}*.count #{basename}*.tex #{basename}*.texi`
+		# Copy last run lilypond file when generating new output.
+		`cp "#{lilypond_filename}" "#{lilypond_last_run_filename}"`
+
+		# Run LilyPond command
+		`#{$mlpp_lilypond_bin} -dbackend=eps -dresolution=600 --png "#{lilypond_filename}"`
+		# log( "#{$mlpp_lilypond_bin} -dbackend=eps -dresolution=600 --png #{lilypond_filename}")
+		# Clean up unused files generated by LilyPond
+		`rm #{lilypond_basename}*.eps #{lilypond_basename}*.count #{lilypond_basename}*.tex #{lilypond_basename}*.texi`
 		identical = false
 	end
 	random = rand(1000)
-	generated_file = File.basename(lilypond_filename, ".ly") + ".png?#{random}"
+	generated_file = File.join($mlpp_lilypond_output_relative_path, "#{lilypond_basename}.png?#{random}")
 	return generated_file
 end
 
