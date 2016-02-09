@@ -2,8 +2,10 @@
 
 - [x] Function to get template (can be stored in different places)
 - [x] Default template
-- [ ] Where to store lilypond-files and output (`Markdown-file/subfolder`)?
+- [x] Restore function that checks for identical `lilypond snippets`
+- [x] Where to store lilypond-files and output (`Markdown-file/subfolder`)?
 - [ ] Config format -> YAML
+- [ ] Handle Markdown files with UTF-8 characters
 - [ ] Store global configs in multimarkdown-config file? `template-dir: ...`
 - [x] Two modes: `<!-- lilypond-simple -->` / `<!-- lilypond-full -->`. Process music differently depending on if entered as direct input or as variable:
 
