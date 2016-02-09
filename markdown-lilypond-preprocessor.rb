@@ -10,9 +10,9 @@ Dir.chdir(ENV['MARKED_ORIGIN'])
 
 # Global variables
 
-$mlpp_marked_origin                 = ENV['MARKED_ORIGIN']
-$mlpp_marked_path                   = ENV['MARKED_PATH']
-$mlpp_marked_ext                    = ENV['MARKED_EXT']
+$mlpp_marked_origin                 = ENV['MARKED_ORIGIN'].dup.force_encoding("UTF-8")
+$mlpp_marked_path                   = ENV['MARKED_PATH'].dup.force_encoding("UTF-8")
+$mlpp_marked_ext                    = ENV['MARKED_EXT'].dup.force_encoding("UTF-8")
 $mlpp_marked_filename               = File.basename($mlpp_marked_path, ".#{$mlpp_marked_ext}")
 $mlpp_lilypond_output_relative_path = "./#{$mlpp_marked_filename}-lilypond-data"
 $mlpp_lilypond_output_full_path     = File.join($mlpp_marked_origin, $mlpp_lilypond_output_relative_path)
@@ -47,10 +47,10 @@ def read_config_file( file )
 	return configs
 end
 
-def find_and_process_snippets(markdown)
+def find_and_process_snippets( markdown )
 	# Regex to find lilypond snippets. First part determines if it is a code-block or else checks if it's a LilyPond-snippet.
 	re_get_snippet = /((^`{3,})\w*\n[\s\S]*?\n(\2))|(?:<!--\s*(lilypond-(?:simple|full))\s*-->$\n(?:(```)\w*$)*)([\s\S]*?)(\5*\n<!--\s*\4\s*-->)/mi
-	
+
 	# Find all simple snippets in markdown and process them.
 	processed_markdown = markdown.gsub(re_get_snippet).with_index do | m, index |
 		if $2 # If group 2 is present, then it should display as code - proceed without processing
@@ -210,8 +210,6 @@ def get_lilypond_template( template_file, index = '?')
 	# 
 	# return template
 
-	template_dir = File.dirname(template_file)
-	template_filename = File.basename(template_file, ".*") + ".ly"
 	template_path = File.join(
 		File.dirname(template_file),
 		File.basename(template_file, ".*") + ".ly"
