@@ -1,10 +1,11 @@
 # Todo
 
-- [ ] Function to get template (can be stored in different places)
-- [ ] Default template
+- [x] Function to get template (can be stored in different places)
+- [x] Default template
 - [ ] Where to store lilypond-files and output (subfolder)?
-- [ ] Get config from multimarkdown-config in file header
-- [ ] Two modes: `<!-- lilypond-simple -->` / `<!-- lilypond-full -->`. Process music differently depending on if entered as direct input or as variable:
+- [ ] Config format -> YAML
+- [ ] Store global configs in multimarkdown-config file? `template-dir: ...`
+- [x] Two modes: `<!-- lilypond-simple -->` / `<!-- lilypond-full -->`. Process music differently depending on if entered as direct input or as variable:
 
 ## Simple mode
 
