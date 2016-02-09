@@ -11,15 +11,19 @@ Dir.chdir(ENV['MARKED_ORIGIN'])
 $mlpp_marked_origin        = ENV['MARKED_ORIGIN']
 $mlpp_marked_ext           = ENV['MARKED_EXT']
 $mlpp_marked_filename      = File.basename(ENV['MARKED_PATH'], ".#{$mlpp_marked_ext}")
-$mlpp_lilypond_output_path = "#{$mlpp_marked_origin}#{$mlpp_marked_filename}-lilypond-data"
-$mlpp_script_dir           = "#{ENV['HOME']}/.markdown-lilypond-preprocessor"
-$mlpp_config_file          = "#{$mlpp_script_dir}/config"
-$mlpp_template_dir         = "#{$mlpp_script_dir}/templates"
+$mlpp_lilypond_output_path = File.join($mlpp_marked_origin, "#{$mlpp_marked_filename}-lilypond-data")
+$mlpp_script_dir           = File.dirname(__FILE__)
+$mlpp_home_dir             = File.join(ENV['HOME'], ".markdown-lilypond-preprocessor")
+$mlpp_config_file          = File.join($mlpp_home_dir, "config")
+$mlpp_template_dir         = File.join($mlpp_home_dir, "templates")
+$mlpp_default_template     = File.join($mlpp_script_dir, "lib/default-template.ly")
+$mlpp_lilypond_bin         = "/Applications/LilyPond.app/Contents/Resources/bin/lilypond"
 
 def log( data )
-	time = Time.now.getutc
-	output = "  \n`#{time}`: #{data}"
-	File.open('./log.txt', 'a') { |f| f.write(output) }
+	timestamp = Time.now.getutc
+	output = "  \n`#{timestamp}`: #{data}"
+	log_path = File.join($mlpp_script_dir, "log.txt")
+	File.open(log_path, 'a') { |f| f.write(output) }
 end
 
 def read_config_file( file )
@@ -85,12 +89,10 @@ def lilypond_simple_output( lilypond_obj, index )
 	config = lilypond_obj["config"]
 	music = lilypond_obj["music"]
 	songprops = config["songprops"]
-	hash = config["config_hash"]
-	template = hash["template"]
+	config_hash = config["config_hash"]
+	template = config_hash["template"]
 	template_content = get_lilypond_template( template, index )
 	last_run_prefix = "_"
-
-	lilypond_bin = "/Applications/LilyPond.app/Contents/Resources/bin/lilypond"
 
 	songprops_string = ""
 	songprops.each do |key, value|
@@ -115,7 +117,7 @@ def lilypond_simple_output( lilypond_obj, index )
 	identical = true
 	unless file_content == last_run_file_content
 		`cp #{lilypond_filename} #{last_run_filename}`
-		`#{lilypond_bin} -dbackend=eps -dresolution=600 --png #{lilypond_filename}`
+		`#{$mlpp_lilypond_bin} -dbackend=eps -dresolution=600 --png #{lilypond_filename}`
 		basename = File.basename(lilypond_filename, ".ly")
 		`rm #{basename}*.eps #{basename}*.count #{basename}*.tex #{basename}*.texi`
 		identical = false
@@ -183,7 +185,7 @@ def get_lilypond_template( template_file, index = '?')
 	log_template = false
 	# Set default template if template_file is empty or not set
 	if !template_file
-		template_file = "./lib/default-template"
+		template_file = $mlpp_default_template
 	end
 	
 	# Search for templates:
@@ -208,8 +210,8 @@ def get_lilypond_template( template_file, index = '?')
 	template = "___Template `#{template_path}` in the snippet no `#{index}` was not found.___"
 
 	# Search for file as entered
-	if File.file?( File.expand_path( template_file ))
-		template = IO.read( template_file )
+	if File.file?( File.expand_path( template_path ))
+		template = IO.read( template_path )
 		if log_template
 			log( "Template found (#{index}):\n #{template_file}" )
 		end
