@@ -1,4 +1,9 @@
+\version "2.18.2"
+
+\language "english"
+
 #{songprops}
+
 #{music}
 
 \paper{

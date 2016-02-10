@@ -2,26 +2,12 @@
 #<Encoding:UTF-8>
 
 require 'fileutils'
+require 'yaml'
 
 # This script should be run from Marked 2 to work
 
 # Change dir to MARKED_ORIGIN path env var set by Marked and assign variables for all env vars.
 Dir.chdir(ENV['MARKED_ORIGIN'])
-
-# Global variables
-
-$mlpp_marked_origin                 = ENV['MARKED_ORIGIN'].dup.force_encoding("UTF-8")
-$mlpp_marked_path                   = ENV['MARKED_PATH'].dup.force_encoding("UTF-8")
-$mlpp_marked_ext                    = ENV['MARKED_EXT'].dup.force_encoding("UTF-8")
-$mlpp_marked_filename               = File.basename($mlpp_marked_path, ".#{$mlpp_marked_ext}")
-$mlpp_lilypond_output_relative_path = "./#{$mlpp_marked_filename}-lilypond-data"
-$mlpp_lilypond_output_full_path     = File.join($mlpp_marked_origin, $mlpp_lilypond_output_relative_path)
-$mlpp_script_dir                    = File.dirname(__FILE__)
-$mlpp_home_dir                      = File.join(ENV['HOME'], ".markdown-lilypond-preprocessor")
-$mlpp_config_file                   = File.join($mlpp_home_dir, "config")
-$mlpp_template_dir                  = File.join($mlpp_home_dir, "templates")
-$mlpp_default_template              = File.join($mlpp_script_dir, "lib/default-template.ly")
-$mlpp_lilypond_bin                  = "/Applications/LilyPond.app/Contents/Resources/bin/lilypond"
 
 def log( data )
 	timestamp = Time.now.getutc
@@ -31,20 +17,33 @@ def log( data )
 	File.open(log_path, 'a') { |f| f.write(output) }
 end
 
-def read_config_file( file )
+def read_config( file )
 	# Read config file, create it with default values if it doesn't exist
 	
-	if File.file?( file )
-		configs = IO.read( file )
-	else
-		configs = "lilypond_bin: \"/Applications/LilyPond.app/Contents/Resources/bin/lilypond\"\ndefault_template: \"default-template\""
+	def write_default_config( file )
+		default_config = {
+			"lilypond_bin" => "/Applications/LilyPond.app/Contents/Resources/bin/lilypond",
+			"default_template" => "default-template.ly",
+		}
 		dirname = File.dirname( file )
+		
 		unless File.directory?( dirname )
 		  FileUtils.mkdir_p( dirname )
 		end
-		IO.write( file, configs )
+		IO.write( file, YAML.dump(default_config) )
+		return default_config
 	end
-	return configs
+
+	
+	if File.file?( file )
+		config = YAML.load_file( file )
+		if !config
+			config = write_default_config( file )
+		end
+	else
+		config = write_default_config( file )
+	end
+	return config
 end
 
 def find_and_process_snippets( markdown )
@@ -245,6 +244,25 @@ def get_lilypond_template( template_file, index = '?')
 
 	end
 	return template
+end
+
+# Set global variables
+$mlpp_marked_origin                 = ENV['MARKED_ORIGIN'].dup.force_encoding("UTF-8")
+$mlpp_marked_path                   = ENV['MARKED_PATH'].dup.force_encoding("UTF-8")
+$mlpp_marked_ext                    = ENV['MARKED_EXT'].dup.force_encoding("UTF-8")
+$mlpp_marked_filename               = File.basename($mlpp_marked_path, ".#{$mlpp_marked_ext}")
+$mlpp_lilypond_output_relative_path = "./#{$mlpp_marked_filename}-lilypond-data"
+$mlpp_lilypond_output_full_path     = File.join($mlpp_marked_origin, $mlpp_lilypond_output_relative_path)
+$mlpp_script_dir                    = File.dirname(__FILE__)
+$mlpp_home_dir                      = File.join(ENV['HOME'], ".markdown-lilypond-preprocessor")
+$mlpp_config_file                   = File.join($mlpp_home_dir, "config")
+$mlpp_config                        = read_config( $mlpp_config_file )
+$mlpp_template_dir                  = File.join($mlpp_home_dir, "templates")
+$mlpp_default_template              = File.join($mlpp_script_dir, "lib/default-template.ly")
+$mlpp_lilypond_bin                  = $mlpp_config["lilypond_bin"]
+
+if $mlpp_config["default_template"]
+	$mlpp_default_template = $mlpp_config["default_template"]
 end
 
 input = $stdin.read
