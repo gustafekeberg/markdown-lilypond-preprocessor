@@ -24,7 +24,7 @@ The goal for this simple ruby script is to make it easy to include music via a L
 ### Explanation
 
 - The code has to be enclosed in `<!-- lilypond-simple -->` or `<!-- lilypond-full -->` tags
-- The three backticks ` ``` ` are only used to format the snippet as code if no pre-processor is available. It can be eliminated without any problems.
+- The three backticks \`\`\` are only used to format the snippet as code if no pre-processor is available. It can be eliminated without any problems.
 
 ## Howto use the script
 
