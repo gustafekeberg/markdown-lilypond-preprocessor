@@ -8,20 +8,18 @@ The goal for this simple ruby script is to make it easy to include music via a L
 
 ## LilyPond snippet - example
 
-````
-<!-- lilypond-simple -->
-```
-
-key: b-minor
-time: 4/4
-template: default
-
-d4 b cs d | e e e2 | \break
-e4 d cs b | a a a2 \bar "|."
-
-```
-<!--lilypond-simple -->
-````
+    <!-- lilypond-simple -->
+    ```
+    
+    key: b-minor
+    time: 4/4
+    template: default
+   
+    d4 b cs d | e e e2 | \break
+    e4 d cs b | a a a2 \bar "|."
+    
+    ```
+    <!--lilypond-simple -->
 
 ### Explanation
 
