@@ -4,7 +4,7 @@
 
 The goal for this simple ruby script is to make it easy to include music via a LilyPond snippet in a markdown file.
 
-*There are many things remaingin before it's useful!*
+*There are many things to do before it's complete!*
 
 ## LilyPond snippet - example
 
@@ -32,4 +32,4 @@ e4 d cs b | a a a2 \bar "|."
 
 - [ ] How to run the script?
 - [ ] Where to store templates?
-- [ ] Diffrent modes: `liypond-simple` / `lilypond-full`
+- [ ] Different modes: `<!-- lilypond-simple -->` or `<!-- lilypond-full -->`
