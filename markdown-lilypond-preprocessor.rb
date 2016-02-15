@@ -69,18 +69,22 @@ def process_simple_snippet(snippet, index)
 	
 	# Regex to get snippet data, group 1 = config, group 2 = music.
 	# re_get_data_from_snippet = /((?:\w*\:\s*[\w\W]*?\n)+)([^\1]+)/mi
-	re_get_data_from_snippet = /^-{3}\s*\n([^\1]*?)-{3}\s*\n([^\1]*)/mi
-	data = re_get_data_from_snippet.match(snippet)
+	data = /(?:^---\s*([\s\S]*)---\s*$([\s\S]*))/.match(snippet)
 	
 	# Process config and music.
 	# config = extract_lilypond_config(data[1])
-	config = YAML.load( data[1] )
-	music = process_music(data[2])
-	lily_data = data[2]
+	config = ""
+	if data then
+		config = YAML.load( data[1] )
+		# music = data[2]
+		lily_data = data[2]
+	else
+		lily_data = snippet
+	end
 	# Make lilypond file from snippet data
 	file_src = lilypond_simple_output( {
 		"config" => config,
-		"music" => music,
+		# "music" => music,
 		"lily_data" => lily_data,
 		}, index )
 	return file_src
