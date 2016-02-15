@@ -1,10 +1,5 @@
 \version "2.18.2"
 
-\language "english"
-
-#{songprops}
-
-#{music}
 
 \paper{
   indent=0\mm
@@ -16,6 +11,6 @@
 }
 
  \relative c' {
- 	\songprops
- 	\music
+	\language "english"
+	#{music}
  }
