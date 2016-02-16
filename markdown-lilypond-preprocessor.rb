@@ -77,15 +77,14 @@ def process_simple_snippet(snippet, index)
 	if data then
 		config = YAML.load( data[1] )
 		# music = data[2]
-		lily_data = data[2]
+		lily_content = data[2]
 	else
-		lily_data = snippet
+		lily_content = snippet
 	end
 	# Make lilypond file from snippet data
 	file_src = lilypond_simple_output( {
 		"config" => config,
-		# "music" => music,
-		"lily_data" => lily_data,
+		"lily_content" => lily_content,
 		}, index )
 	return file_src
 end
@@ -102,25 +101,19 @@ def lilypond_simple_output( lilypond_obj, index )
 	lilypond_basename = File.basename(lilypond_filename, ".ly")
 
 	config = lilypond_obj["config"]
-	music = lilypond_obj["music"]
-	lily_data = lilypond_obj["lily_data"]
-	songprops = config["songprops"]
-	config_variables = config["variables"]
 	template_file = config["template"]
 	template = get_lilypond_template( template_file, index )
 	template_content = template["template"]
 	template_message = template["message"]
 
-	# songprops_string = ""
-	# songprops.each do |key, value|
-	# 	songprops_string += value
-	# end
-	# songprops_string = "songprops = {\n#{songprops_string}}"
-
-	template_processed = template_content.gsub('#{music}', lily_data)
-	# template_processed = template_processed.gsub('#{songprops}', songprops_string)
+	# processed_template = template_content.gsub('#{lily_content}', lily_content)
+	processed_template = replace_vars_in_template({
+		"variables"     => lilypond_obj["config"]["variables"],
+		"content"  => lilypond_obj["lily_content"],
+		"template" => template_content
+		})
 	
-	IO.write(lilypond_filename, template_processed)
+	IO.write(lilypond_filename, processed_template)
 
 	file_content = File.read( lilypond_filename )
 	last_run_file_content = ""
@@ -142,13 +135,23 @@ def lilypond_simple_output( lilypond_obj, index )
 		`rm #{lilypond_basename}*.eps #{lilypond_basename}*.count #{lilypond_basename}*.tex #{lilypond_basename}*.texi`
 		identical = false
 
-		# Add a timestamp to prevent caching of image
-		now       = Time.now.getutc
-		timestamp = "?#{now}"
 	end
+	# Add a timestamp to prevent caching of image
+	now       = Time.now.getutc
+	timestamp = "?#{now}"
 	generated_file = File.join($mlpp_lilypond_output_relative_path, "#{lilypond_basename}.png#{timestamp}")
 	message = "#{template_message}"
 	return {"file" => generated_file, "message" => message}
+end
+
+def replace_vars_in_template(obj)
+	template = obj["template"]
+	template = template.gsub('#{lily_content}', obj["content"])
+	obj["variables"].each do | key, var |
+		template = template.gsub("\#\{#{key}\}", var)
+	end
+	log ( template )
+	return template
 end
 
 def get_config_keys( lines )
