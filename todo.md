@@ -7,6 +7,7 @@
 - [ ] Rename variables
 - [ ] Clean-up code
 - [ ] Config key: `lilypond_content_variable_name: "name of var"` - used to rename the variable where the content is placed, default name = `#{lily_content}`
+- [ ] Check out [lilycrop.sh](https://github.com/andrewacashner/lilypond/blob/master/lilycrop.sh) to see if it's possible to make cropped PDFs which then are converted to SVG via [pdf2svg](http://www.cityinthesky.co.uk/opensource/pdf2svg/). ([pdftk](http://stackoverflow.com/questions/32505951/pdftk-server-on-os-x-10-11/33248310#33248310) on El Capitan)
 
 
 ---
