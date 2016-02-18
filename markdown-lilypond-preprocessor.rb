@@ -45,7 +45,7 @@ end
 
 def find_and_process_snippets( markdown )
 	# Regex to find lilypond snippets. First part determines if it is a code-block or else checks if it's a LilyPond-snippet.
-	re_get_snippet = /((^`{3,})\w*\n[\s\S]*?\n(\2))|(?:<!--\s*(lilypond-(?:simple|full))\s*-->$\n(?:(```)\w*$)*)([\s\S]*?)(\5*\n<!--\s*\4\s*-->)/mi
+	re_get_snippet = /((^`{3,})\w*\n[\s\S]*?\n(\2))|(?:<!--\s*(lilypond-(?:snippet|simple|full))\s*-->$\n(?:(```)\w*$)*)([\s\S]*?)(\5*\n<!--\s*\4\s*-->)/mi
 
 	# Find all simple snippets in markdown and process them.
 	processed_markdown = markdown.gsub(re_get_snippet).with_index do | m, index |
@@ -53,8 +53,8 @@ def find_and_process_snippets( markdown )
 			$1
 		else # Else check what type of snippet (simple|full|...)
 			case $4
-			when "lilypond-simple"
-				output_src = process_simple_snippet($6, index)
+			when "lilypond-snippet"
+				output_src = process_lilypond_snippet($6, index)
 				"<figure class=\"music-container\"><img src=\"#{output_src["file"]}\" /></figure>"
 			else
 				"*The `#{$4}`-tag is not yet implemented!*"
@@ -65,7 +65,7 @@ def find_and_process_snippets( markdown )
 	return processed_markdown
 end
 
-def process_simple_snippet(snippet, index)
+def process_lilypond_snippet(snippet, index)
 	
 	# Regex to get snippet data, group 1 = config, group 2 = music.
 	# re_get_data_from_snippet = /((?:\w*\:\s*[\w\W]*?\n)+)([^\1]+)/mi
@@ -108,9 +108,9 @@ def lilypond_simple_output( lilypond_obj, index )
 
 	# processed_template = template_content.gsub('#{lily_content}', lily_content)
 	processed_template = replace_vars_in_template({
-		"variables"     => lilypond_obj["config"]["variables"],
-		"content"  => lilypond_obj["lily_content"],
-		"template" => template_content
+		"variables" => lilypond_obj["config"]["variables"],
+		"content"   => lilypond_obj["lily_content"],
+		"template"  => template_content
 		})
 	
 	IO.write(lilypond_filename, processed_template)
@@ -147,10 +147,11 @@ end
 def replace_vars_in_template(obj)
 	template = obj["template"]
 	template = template.gsub('#{lily_content}', obj["content"])
-	obj["variables"].each do | key, var |
-		template = template.gsub("\#\{#{key}\}", var)
+	if obj["variables"]
+		obj["variables"].each do | key, var |
+			template = template.gsub("\#\{#{key}\}", var)
+		end
 	end
-	log ( template )
 	return template
 end
 

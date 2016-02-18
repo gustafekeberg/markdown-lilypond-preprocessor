@@ -1,6 +1,6 @@
 # Todo
 
-- [ ] Handle pipe-input or filename
+- [ ] Handle piped-input or filename
 - [ ] Store global configs in multimarkdown-config file? `template-dir: ...`
 - [ ] ~~Handle `<!-- lilypond-full -->`~~ not needed any more
 - [ ] Template file should be copied to `$mlpp_lilypond_output_full_path` if the file doesn't already exists there. The copied template should then be used to process the snippets. This will prevent errors in snippet processing if templates are changed/updated. To use a newer version of a template, just remove the template copy from `$mlpp_lilypond_output_full_path`.
@@ -31,7 +31,7 @@ Template consists of two parts:
 
 ## Template
 ````
-<!-- lilypond -->
+<!-- lilypond-snippet -->
 ```ly
 ---
 key: variable
@@ -47,7 +47,7 @@ variables:
 a b c | d e f | g2. \bar "|."
 
 ```
-<!-- lilypond -->
+<!-- lilypond-snippet -->
 ````
 
 # Old mode (discarded)
