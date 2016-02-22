@@ -1,12 +1,17 @@
 # Todo
 
-- [ ] Handle piped-input or filename
-- [ ] Store global configs in multimarkdown-config file? `template-dir: ...`
+- [ ] Handle both piped-input and files
+- [ ] Be able to run script on it's own, without Marked 2
+- [ ] Store some global configuration variables in multimarkdown-header? `template-dir: ...` ...
 - [ ] ~~Handle `<!-- lilypond-full -->`~~ not needed any more
 - [ ] Template file should be copied to `$mlpp_lilypond_output_full_path` if the file doesn't already exists there. The copied template should then be used to process the snippets. This will prevent errors in snippet processing if templates are changed/updated. To use a newer version of a template, just remove the template copy from `$mlpp_lilypond_output_full_path`.
 - [ ] Rename variables
+- [ ] Replace all occurrences of `#{lily_content}`, not just the first one as I believe it is now
 - [ ] Clean-up code
-- [ ] Config key: `lilypond_content_variable_name: "name of var"` - used to rename the variable where the content is placed, default name = `#{lily_content}`
+- [ ] Config keys:
+    + `lilypond_content_variable_name: "name of var"` - used to rename the variable where the content is placed, default name = `#{lily_content}`
+    + `template_path: ~/...` = where to store/look for templates
+    + `copy_template: true/false`
 - [ ] Check out [lilycrop.sh](https://github.com/andrewacashner/lilypond/blob/master/lilycrop.sh) to see if it's possible to make cropped PDFs which then are converted to SVG via [pdf2svg](http://www.cityinthesky.co.uk/opensource/pdf2svg/). ([pdftk](http://stackoverflow.com/questions/32505951/pdftk-server-on-os-x-10-11/33248310#33248310) on El Capitan)
 
 

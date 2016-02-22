@@ -75,7 +75,7 @@ def process_lilypond_snippet(snippet, index)
 	# config = extract_lilypond_config(data[1])
 	config = ""
 	if data then
-		config = YAML.load( data[1] )
+		config = YAML.load( data[1] ) unless data[1] == ""
 		# music = data[2]
 		lily_content = data[2]
 	else

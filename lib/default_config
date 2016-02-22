@@ -1,3 +1,5 @@
 ---
 lilypond_bin: "/Applications/LilyPond.app/Contents/Resources/bin/lilypond"
 default_template: default-template.ly
+template_path: ~/.markdown-lilypond-preprocessor/templates
+copy_template: true
