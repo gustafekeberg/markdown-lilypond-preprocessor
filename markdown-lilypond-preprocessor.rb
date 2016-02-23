@@ -26,7 +26,7 @@ def read_config( file )
 		dirname = File.dirname( file )
 		
 		unless File.directory?( dirname )
-		  FileUtils.mkdir_p( dirname )
+			FileUtils.mkdir_p( dirname )
 		end
 		IO.write( file, YAML.dump(default_config) )
 		return default_config
@@ -68,85 +68,109 @@ end
 def process_lilypond_snippet(snippet, index)
 	
 	# Regex to get snippet data, group 1 = config, group 2 = music.
-	# re_get_data_from_snippet = /((?:\w*\:\s*[\w\W]*?\n)+)([^\1]+)/mi
-	data = /(?:^---\s*([\s\S]*)---\s*$([\s\S]*))/.match(snippet)
+	extracted_data = /(?:^---\s*([\s\S]*)---\s*$([\s\S]*))/.match( snippet )
 	
 	# Process config and music.
-	# config = extract_lilypond_config(data[1])
-	config = ""
-	if data then
-		config = YAML.load( data[1] ) unless data[1] == ""
-		# music = data[2]
-		lily_content = data[2]
+	lilypond_config = ""
+	if extracted_data then
+		lilypond_config = YAML.load( extracted_data[1] ) unless extracted_data[1] == ""
+		lilypond_content = extracted_data[2]
 	else
-		lily_content = snippet
+		# If extracted_data is empty just pass full snippet as lilypond conten
+		lilypond_content = snippet
 	end
 	# Make lilypond file from snippet data
-	file_src = lilypond_simple_output( {
-		"config" => config,
-		"lily_content" => lily_content,
+	file_src = make_lilypond_output( {
+		"lilypond_config"       => lilypond_config,
+		"lilypond_content" => lilypond_content,
 		}, index )
 	return file_src
 end
 
-def lilypond_simple_output( lilypond_obj, index )
-	# Construct the lilypond file
-	lilypond_dir = File.expand_path($mlpp_lilypond_output_full_path)
-	FileUtils.mkdir_p( lilypond_dir )
-	Dir.chdir(lilypond_dir)
-	simple_snippet_filename = "simple-snippet-#{index}.ly"
-	last_run_prefix = "_"
-	lilypond_filename = File.join(lilypond_dir, simple_snippet_filename)
-	lilypond_last_run_filename = File.join(lilypond_dir, "#{last_run_prefix}#{simple_snippet_filename}")
-	lilypond_basename = File.basename(lilypond_filename, ".ly")
+def make_lilypond_output( lilypond_obj, index )
+	# Construct the lilypond file and run LilyPond on it to get image
+	
+	def make_filenames( obj )
+		# Get full path to data-dir, make dir if it doesn't exist yet, goto dir
+		lilypond_dir = File.expand_path( $mlpp_lilypond_data_dir_full_path )
+		FileUtils.mkdir_p( lilypond_dir )
+		Dir.chdir(lilypond_dir)
 
-	config = lilypond_obj["config"]
-	template_file = config["template"]
-	template = get_lilypond_template( template_file, index )
-	template_content = template["template"]
-	template_message = template["message"]
+		simple_snippet_filename = "#{obj["lilypond_filename"]}-#{obj["index"]}.ly"
+		simple_snippet_filename_lastrun = "_#{simple_snippet_filename}"
 
-	# processed_template = template_content.gsub('#{lily_content}', lily_content)
-	processed_template = replace_vars_in_template({
-		"variables" => lilypond_obj["config"]["variables"],
-		"content"   => lilypond_obj["lily_content"],
-		"template"  => template_content
+		# Filenames of lilypond snippet files and last run files
+		lilypond_filename = File.join(lilypond_dir, "#{obj["lilypond_filename"]}-#{obj["index"]}.ly")
+		lilypond_last_run_filename = File.join(lilypond_dir, simple_snippet_filename_lastrun)
+		lilypond_basename = File.basename(lilypond_filename, ".ly")
+		return {
+			"name" => lilypond_filename,
+			"lastrun" => lilypond_last_run_filename,
+			"basename" => lilypond_basename,
+		}
+	end
+	
+	filename = make_filenames({
+		"lilypond_filename" => "lilypond-snippet",
+		"last_run_prefix" => "_",
+		"index" => index,
 		})
-	
-	IO.write(lilypond_filename, processed_template)
 
-	file_content = File.read( lilypond_filename )
-	last_run_file_content = ""
+	template = get_lilypond_template( lilypond_obj["lilypond_config"]["template"], index )
+
+	# Produce lilypond code from snippet data and template file
+	constructed_lilypond_code = replace_placeholders_in_template({
+		"variables" => lilypond_obj["lilypond_config"]["variables"],
+		"content"   => lilypond_obj["lilypond_content"],
+		"template"  => template["content"],
+		"config"    => lilypond_obj["lilypond_config"]
+		})
+
+	# Write lilypond code to disk
+	IO.write( filename["name"], constructed_lilypond_code)
+
 	
-	if File.file?(lilypond_last_run_filename)
-		last_run_file_content = File.read( lilypond_last_run_filename )
+	# If there exist a previous version of the lilypond code read it
+	if File.file?(filename["lastrun"])
+	
+		# Check if lilypond-snippet files has changed since last run, then run LilyPond
+		last_run_file_content = File.read( filename["lastrun"] )
+	else
+		last_run_file_content = ""
 	end
 
-	# Check if lilypond-snippet files has changed since last run, then run LilyPond
-	identical = true
-	unless file_content == last_run_file_content
-		# Copy last run lilypond file when generating new output.
-		`cp "#{lilypond_filename}" "#{lilypond_last_run_filename}"`
+	if constructed_lilypond_code == last_run_file_content
+		identical = true
+	else
+		# Copy last run lilypond file before generating new output.
+		`cp "#{filename["name"]}" "#{filename["lastrun"]}"`
 
 		# Run LilyPond command
-		`#{$mlpp_lilypond_bin} -dbackend=eps -dresolution=600 --png "#{lilypond_filename}"`
-		# log( "#{$mlpp_lilypond_bin} -dbackend=eps -dresolution=600 --png #{lilypond_filename}")
+		`#{$mlpp_lilypond_bin} -dbackend=eps -dresolution=600 --png "#{filename["name"]}"`
 		# Clean up unused files generated by LilyPond
 		`rm #{lilypond_basename}*.eps #{lilypond_basename}*.count #{lilypond_basename}*.tex #{lilypond_basename}*.texi`
 		identical = false
 	end
+	
 	# Add a timestamp to prevent caching of image
 	now       = Time.now.getutc
 	timestamp = "?#{now}"
-	generated_file = File.join($mlpp_lilypond_output_relative_path, "#{lilypond_basename}.png#{timestamp}")
-	message = "#{template_message}"
+	
+	generated_file = File.join($mlpp_lilypond_data_dir_relative_path, "#{filename["basename"]}.png#{timestamp}")
+	message = template["message"]
 	return {"file" => generated_file, "message" => message}
 end
 
-def replace_vars_in_template(obj)
+def replace_placeholders_in_template( obj )
 	template = obj["template"]
-	lilypond_content_variable = '#{lilypond_content}'
-	template = template.gsub(lilypond_content_variable, obj["content"])
+	unless obj["config"]["content_placeholder"]
+		lilypond_content_placeholder = '#{lilypond_content}'
+	else
+		lilypond_content_placeholder = "\#\{#{obj["config"]["content_placeholder"]}\}"
+	end
+	log( lilypond_content_placeholder )
+
+	template = template.gsub(lilypond_content_placeholder, obj["content"])
 	if obj["variables"]
 		obj["variables"].each do | key, var |
 			template = template.gsub("\#\{#{key}\}", var)
@@ -155,59 +179,6 @@ def replace_vars_in_template(obj)
 	return template
 end
 
-def get_config_keys( lines )
-
-	config_hash = {}
-	# Read all config lines and return hash
-	lines.each_line do |line|
-		match = /(\w*)\:\s*([\w\W]*[^\s])/.match(line)
-		key = match[1]
-		value = match[2]
-		config_hash[key] = value
-	end
-	return config_hash
-end
-
-def extract_lilypond_config( config )
-	# Prepare hashes for different config parts.
-	processed_config = {}
-	songprops = {}
-	not_processed = {}
-
-	config_hash = get_config_keys( config )
-
-	# Reformat hash to LilyPond syntax.
-	config_hash.each do |key, value|
-		case key
-		when "key"
-			k = value.split('-')
-			songprops[key] = "\\key #{k[0]} \\#{k[1]}\n"
-		when "time"
-			songprops[key] = "\\#{key} #{value}\n"
-		when "language"
-			songprops[key] = "\\#{key} \"#{value}\"\n"
-		when "template", "baseline"
-			config_hash[key] = value
-		else
-			not_processed[key] = value
-		end
-		
-	end
-
-	# Return hash of all processed config values.
-	processed_config["songprops"] = songprops
-	processed_config["not_processed"] = not_processed
-	processed_config["config_hash"] = config_hash
-
-	# songprops_string = "#{songprops['language']}#{songprops['key']}#{songprops['time']}"
-	return processed_config
-end
-
-def process_music( music )
-	# Make LilyPond variable of music data.
-	music = "music = {#{music}}"
-	return music
-end
 
 def get_lilypond_template( template_file, index = '?')
 	log_template = false
@@ -237,50 +208,50 @@ def get_lilypond_template( template_file, index = '?')
 
 	# Search for file as entered
 	if File.file?( File.expand_path( template_path ))
-		template = IO.read( template_path )
+		template_content = IO.read( template_path )
 		if log_template
 			log( "Template found (#{index}):\n #{template_file}" )
 		end
 	# Search for file in marked_origin dir
 	
-	elsif File.file?( marked_origin_template )
-		template = IO.read( marked_origin_template )
-		if log_template
-			log( "Template found (#{index}):\n #{marked_origin_template}" )
-		end
+elsif File.file?( marked_origin_template )
+	template_content = IO.read( marked_origin_template )
+	if log_template
+		log( "Template found (#{index}):\n #{marked_origin_template}" )
+	end
 
 	# Search in template dir in user-root
 	
-	elsif File.file?( template_dir_template )
-		template = IO.read( template_dir_template )
-		if log_template
-			log( "Template found (#{index}):\n #{template_dir_template}" )
-		end
-	else
+elsif File.file?( template_dir_template )
+	template_content = IO.read( template_dir_template )
+	if log_template
+		log( "Template found (#{index}):\n #{template_dir_template}" )
+	end
+else
 		# Get builtin template if template not found
-		template = IO.read( $mlpp_builtin_template )
+		template_content = IO.read( $mlpp_builtin_template )
 		template_message = "___Template `#{template_path}` in the snippet no `#{index}` was not found.___"
 
 	end
-	return {"template" => template, "message" => template_message}
+	return {"content" => template_content, "message" => template_message}
 end
 
-# Set global variables
-$mlpp_marked_origin                 = ENV['MARKED_ORIGIN'].dup.force_encoding("UTF-8")
-$mlpp_marked_path                   = ENV['MARKED_PATH'].dup.force_encoding("UTF-8")
-$mlpp_marked_ext                    = ENV['MARKED_EXT'].dup.force_encoding("UTF-8")
-$mlpp_marked_filename               = File.basename($mlpp_marked_path, ".#{$mlpp_marked_ext}")
-$mlpp_lilypond_output_relative_path = "./#{$mlpp_marked_filename}-lilypond-data"
-$mlpp_lilypond_output_full_path     = File.join($mlpp_marked_origin, $mlpp_lilypond_output_relative_path)
-$mlpp_script_dir                    = File.dirname(__FILE__)
-$mlpp_lib_dir                       = File.join( $mlpp_script_dir, "lib" )
-$mlpp_home_dir                      = File.join(ENV['HOME'], ".markdown-lilypond-preprocessor")
-$mlpp_config_file                   = File.join($mlpp_home_dir, "config")
-$mlpp_template_dir                  = File.join($mlpp_home_dir, "templates")
-$mlpp_builtin_template              = File.join($mlpp_script_dir, "lib/default-template.ly")
-$mlpp_default_template              = $mlpp_builtin_template
-$mlpp_config                        = read_config( $mlpp_config_file )
-$mlpp_lilypond_bin                  = $mlpp_config["lilypond_bin"]
+# Global variables
+$mlpp_marked_origin                   = ENV['MARKED_ORIGIN'].dup.force_encoding("UTF-8")
+$mlpp_marked_path                     = ENV['MARKED_PATH'].dup.force_encoding("UTF-8")
+$mlpp_marked_ext                      = ENV['MARKED_EXT'].dup.force_encoding("UTF-8")
+$mlpp_marked_filename                 = File.basename($mlpp_marked_path, ".#{$mlpp_marked_ext}")
+$mlpp_lilypond_data_dir_relative_path = "./#{$mlpp_marked_filename}-lilypond-data"
+$mlpp_lilypond_data_dir_full_path     = File.join($mlpp_marked_origin, $mlpp_lilypond_data_dir_relative_path)
+$mlpp_script_dir                      = File.dirname(__FILE__)
+$mlpp_lib_dir                         = File.join( $mlpp_script_dir, "lib" )
+$mlpp_home_dir                        = File.join(ENV['HOME'], ".markdown-lilypond-preprocessor")
+$mlpp_config_file                     = File.join($mlpp_home_dir, "config")
+$mlpp_template_dir                    = File.join($mlpp_home_dir, "templates")
+$mlpp_builtin_template                = File.join($mlpp_script_dir, "lib/default-template.ly")
+$mlpp_default_template                = $mlpp_builtin_template
+$mlpp_config                          = read_config( $mlpp_config_file )
+$mlpp_lilypond_bin                    = $mlpp_config["lilypond_bin"]
 
 if $mlpp_config["default_template"]
 	$mlpp_default_template = $mlpp_config["default_template"]

@@ -25,6 +25,7 @@ The code below shows an example of a LilyPond snippet in a Markdown file.
 	---
 	variables:
 	    key: variable
+	content_placeholder: lilypond_content
 	template: default
 	---
 
