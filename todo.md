@@ -1,5 +1,6 @@
 # Todo
 
+- [ ] Why is the document processed twice?
 - [ ] Handle both piped-input and files
 - [ ] Be able to run script on it's own, without Marked 2
 - [ ] Store some global configuration variables in multimarkdown-header? `template-dir: ...` ...

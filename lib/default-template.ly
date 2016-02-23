@@ -12,5 +12,5 @@
 
  \relative c' {
 	\language "english"
-	#{music}
+	#{lilypond_content}
  }
