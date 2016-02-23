@@ -9,6 +9,7 @@
 - [ ] Rename variables
 - [ ] Replace all occurrences of `#{lily_content}`, not just the first one as I believe it is now
 - [x] Clean-up code
+- [ ] Error output from LilyPond: *replace image with error message if error*
 - [ ] Config keys:
     + [x] `content_placeholder: "name of var"` - used to rename the variable where the content is placed, default name = `#{lilypond_content}`
     + [ ] `template_path: ~/...` = where to store/look for templates
