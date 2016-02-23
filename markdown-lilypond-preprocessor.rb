@@ -168,7 +168,6 @@ def replace_placeholders_in_template( obj )
 	else
 		lilypond_content_placeholder = "\#\{#{obj["config"]["content_placeholder"]}\}"
 	end
-	log( lilypond_content_placeholder )
 
 	template = template.gsub(lilypond_content_placeholder, obj["content"])
 	if obj["variables"]
