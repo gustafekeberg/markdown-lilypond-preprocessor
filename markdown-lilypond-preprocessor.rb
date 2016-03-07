@@ -47,7 +47,7 @@ end
 def find_and_process_snippets( markdown )
 	
 	# Regex to find lilypond snippets. First part determines if it is a code-block or else checks if it's a LilyPond-snippet.
-	re_get_snippet = /((^`{3,})\w*\n[\s\S]*?\n(\2))|(?:<!--\s*(lilypond-(?:snippet|simple|full))\s*-->$\n(?:(```)\w*$)*)([\s\S]*?)(\5*\n<!--\s*\4\s*-->)/mi
+	re_get_snippet = /((^`{3,})\w*\n[\s\S]*?\n(\2))|^(?:<!--\s*(lilypond-(?:snippet|simple|full))\s*-->$\n(?:(```)\w*$)*)([\s\S]*?)(\5*\n<!--\s*\4\s*-->)/mi
 
 	# Find all simple snippets in markdown and process them.
 	processed_markdown = markdown.gsub(re_get_snippet).with_index do | m, index |
@@ -155,6 +155,14 @@ def make_lilypond_output( lilypond_obj, index )
 	generated_file = File.join($mlpp_lilypond_data_dir_relative_path, "#{filename["basename"]}.png?sha=#{sha_query_string}")
 	message        = template["message"]
 	return {"file" => generated_file, "message" => message}
+end
+
+def run_lilypond( obj )
+	filename = obj["name"] # Move filename function to run_lilypond
+	type = obj["type"]
+	dpi = obj["dpi"]
+	generated_file = "#{filename}.#{type}"
+	return generated_file
 end
 
 def replace_placeholders_in_template( obj )
