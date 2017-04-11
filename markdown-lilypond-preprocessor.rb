@@ -97,11 +97,11 @@ def make_lilypond_output( lilypond_obj, index )
 		FileUtils.mkdir_p( lilypond_dir )
 		Dir.chdir(lilypond_dir)
 
-		simple_snippet_filename = "#{obj["lilypond_filename"]}-#{obj["index"]}.ly"
+		simple_snippet_filename = "#{obj["lilypond_filename"]}-#{obj["sha"]}.ly"
 		simple_snippet_filename_lastrun = "_#{simple_snippet_filename}"
 
 		# Filenames of lilypond snippet files and last run files
-		lilypond_filename = File.join(lilypond_dir, "#{obj["lilypond_filename"]}-#{obj["index"]}.ly")
+		lilypond_filename = File.join(lilypond_dir, "#{obj["lilypond_filename"]}-#{obj["sha"]}.ly")
 		lilypond_last_run_filename = File.join(lilypond_dir, simple_snippet_filename_lastrun)
 		lilypond_basename = File.basename(lilypond_filename, ".ly")
 		return {
@@ -110,12 +110,7 @@ def make_lilypond_output( lilypond_obj, index )
 			"basename" => lilypond_basename,
 		}
 	end
-	
-	filename = make_filenames({
-		"lilypond_filename" => "lilypond-snippet",
-		"last_run_prefix" => "_",
-		"index" => index,
-		})
+
 
 	template = get_lilypond_template( lilypond_obj["lilypond_config"]["template"], index )
 
@@ -126,10 +121,17 @@ def make_lilypond_output( lilypond_obj, index )
 		"template"  => template["content"],
 		"config"    => lilypond_obj["lilypond_config"]
 		})
+	sha_query_string = Digest::SHA1.hexdigest( constructed_lilypond_code )
+	
+	filename = make_filenames({
+		"lilypond_filename" => "lilypond-snippet",
+		"last_run_prefix" => "_",
+		"index" => index,
+		"sha" => sha_query_string,
+		})
 
 	# Write lilypond code to disk
 	IO.write( filename["name"], constructed_lilypond_code)
-
 	
 	# If there exist a previous version of the lilypond code read it
 	if File.file?(filename["lastrun"])
@@ -150,7 +152,6 @@ def make_lilypond_output( lilypond_obj, index )
 		`rm #{filename["basename"]}*.eps #{filename["basename"]}*.count #{filename["basename"]}*.tex #{filename["basename"]}*.texi`
 	end
 
-	sha_query_string = Digest::SHA1.hexdigest( constructed_lilypond_code )
 	# Add a timestamp to prevent caching of image
 	generated_file = File.join($mlpp_lilypond_data_dir_relative_path, "#{filename["basename"]}.png?sha=#{sha_query_string}")
 	message        = template["message"]
