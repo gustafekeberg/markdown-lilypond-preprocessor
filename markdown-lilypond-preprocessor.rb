@@ -153,7 +153,7 @@ def make_lilypond_output( lilypond_obj, index )
 	end
 
 	# Add a timestamp to prevent caching of image
-	generated_file = File.join($mlpp_lilypond_data_dir_relative_path, "#{filename["basename"]}.png?sha=#{sha_query_string}")
+	generated_file = File.join($mlpp_lilypond_data_dir_relative_path, "#{filename["basename"]}.png")
 	message        = template["message"]
 	return {"file" => generated_file, "message" => message}
 end
